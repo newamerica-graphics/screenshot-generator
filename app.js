@@ -84,7 +84,7 @@ async function downloadImages(url) {
   await page.goto(url, {
     waitUntil: "networkidle2"
   });
-  const blocks = await page.$$(".block-dataviz");
+  const blocks = await page.$$(".na-dataviz");
   await page.evaluate(() => {
     const cookieNotification = document.querySelector(".cookies-notification");
     if (cookieNotification) {
