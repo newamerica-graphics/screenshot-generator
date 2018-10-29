@@ -5,11 +5,15 @@ const { URL } = require("url");
 const puppeteer = require("puppeteer");
 const archiver = require("archiver");
 const fs = require("fs");
-const rimraf = require("rimraf");
+const EventEmitter = require("events");
 const path = require("path");
+const rimraf = require("rimraf");
 const slugify = require("slugify");
 
 let browser;
+let page;
+
+const Status = new EventEmitter();
 
 app.set("port", process.env.PORT || 5000);
 app.use(express.static(__dirname + "/public"));
@@ -24,6 +28,20 @@ app.get("/", function(request, response) {
   response.send("Hello World!");
 });
 
+app.get("/status", function(request, response) {
+  response.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive"
+  });
+  Status.on("start", () => {
+    response.write("data: start\n\n");
+  });
+  Status.on("end", () => {
+    response.write("data: end\n\n");
+  });
+});
+
 app.post("/url", async function(request, response) {
   const url = request.body.url_field;
   const checkURL = new URL(url);
@@ -31,29 +49,39 @@ app.post("/url", async function(request, response) {
     response.send("sorry, not a New America url");
     return;
   }
+
+  Status.emit("start");
+
   browser = await puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
-  }); // { headless: false }
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    headless: true
+  });
+  page = await browser.newPage();
+  await page.setViewport({
+    width: 1200,
+    height: 1200,
+    deviceScaleFactor: 3
+  });
+
   const links = await scrapeToc(url);
   for (let i = 0; i < links.length; i++) {
     await downloadImages(links[i]);
   }
 
   const archive = archiver("zip");
-  const output = fs.createWriteStream("./tmp/screenshots.zip");
+  const output = fs.createWriteStream("./screenshots/screenshots.zip");
 
   output.on("close", function(o) {
-    console.log(archive.pointer() + " total bytes");
     console.log(
       "archiver has been finalized and the output file descriptor has closed."
     );
-    response.sendFile(path.join(__dirname, "/tmp/screenshots.zip"));
-    rimraf("./tmp/*", err => console.log(err));
+    Status.emit("end");
+    response.download(path.join(__dirname, "/screenshots/screenshots.zip"));
+    rimraf("./screenshots/*", err => (err ? console.log(err) : null));
   });
 
   archive.pipe(output);
-  archive.glob("./tmp/*.png"); //some glob pattern here
-  // add as many as you like
+  archive.glob("./screenshots/*.png");
   archive.on("error", function(err) {
     throw err;
   });
@@ -61,13 +89,8 @@ app.post("/url", async function(request, response) {
 });
 
 async function scrapeToc(url) {
-  const page = await browser.newPage();
-  await page.setViewport({
-    width: 1400,
-    height: 1200
-  });
   await page.goto(url, {
-    waitUntil: "networkidle2"
+    waitUntil: ["networkidle0", "networkidle2", "domcontentloaded"]
   });
   const links = await page.evaluate(() => {
     const links = Array.from(
@@ -75,16 +98,15 @@ async function scrapeToc(url) {
     );
     return links.map(link => link.href);
   });
-  await page.close();
+  // await page.close();
   return links.length > 0 ? links : [url];
 }
 
 async function downloadImages(url) {
-  const page = await browser.newPage();
   await page.goto(url, {
-    waitUntil: "networkidle2"
+    waitUntil: ["networkidle0", "networkidle2", "domcontentloaded"]
   });
-  const blocks = await page.$$(".na-dataviz");
+  await page.waitFor(2000);
   await page.evaluate(() => {
     const cookieNotification = document.querySelector(".cookies-notification");
     if (cookieNotification) {
@@ -99,22 +121,19 @@ async function downloadImages(url) {
       topNav.style.display = "none";
     }
   });
+  const blocks = await page.$$(".na-dataviz");
   for (let i = 0; i < blocks.length; i++) {
-    const fileName = Date.now();
     await screenshotDOMElement({
-      path: `./tmp/${fileName}.png`,
       el: blocks[i],
       padding: 16,
       page: page
     });
   }
-  await page.close();
 }
 
 async function screenshotDOMElement(opts = {}) {
   const page = opts.page;
   const padding = "padding" in opts ? opts.padding : 0;
-  const path = "path" in opts ? opts.path : null;
   const element = opts.el;
 
   const rect = await page.evaluate(element => {
@@ -125,6 +144,8 @@ async function screenshotDOMElement(opts = {}) {
 
   if (!rect)
     throw Error(`Could not find element that matches element: ${element}.`);
+
+  const path = `./screenshots/${rect.id}.png`;
 
   return await page.screenshot({
     path,
