@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function() {
   var spinner = document.querySelector(".spinner");
 
   if (!!window.EventSource) {
-    var source = new EventSource("http://localhost:5000/status");
+    var source = new EventSource("/status");
 
     source.addEventListener(
       "message",
