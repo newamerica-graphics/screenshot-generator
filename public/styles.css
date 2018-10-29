@@ -1,6 +1,5 @@
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   background-color: #fafafa;
   height: 100vh;
   display: flex;
@@ -12,10 +11,58 @@ body {
 form {
   display: flex;
   flex-direction: column;
-  width: 16rem;
+  width: 24rem;
+  max-width: 90%;
+  margin: auto;
 }
 
-form label,
+form label {
+  margin: 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
 form input {
   margin: 0.5rem 0;
+  padding: 1rem 0.5rem;
+}
+
+input[type="submit"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  opacity: 1;
+  transition: opacity 0.15s ease-in;
+  cursor: pointer;
+}
+
+input[type="submit"]:hover,
+input[type="submit"]:focus {
+  opacity: 0.5;
+  transition: opacity 0.15s ease-in;
+}
+
+input[type="submit"]:active {
+  opacity: 0.8;
+  transition: opacity 0.15s ease-out;
+}
+
+.spinner {
+  display: none;
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  background-color: #111;
+}
+
+.loading-text {
+  color: #fff;
+  padding-bottom: 1rem;
 }

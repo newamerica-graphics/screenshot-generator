@@ -6,6 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Screenshot Generator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css" />
   <link rel="stylesheet" type="text/css" media="screen" href="styles.css" />
 </head>
 
@@ -16,6 +17,12 @@
       <input id="url" type="url" name="url_field" placeholder="https://www.newamerica.org/">
       <input type="submit" value="Go!">
     </form>
+  </div>
+  <div class="spinner">
+    <div class="loading-text">
+      <h2>Searching the intertubes for your screenshots, brb...</h2>
+    </div>
+    <img src="loading.gif" alt="Loading...">
   </div>
 </body>
 <script src="main.js"></script>
